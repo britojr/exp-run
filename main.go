@@ -9,21 +9,6 @@ import (
 	"github.com/britojr/exp-run/cmd"
 )
 
-func main() {
-	if len(os.Args) < 2 {
-		printDefaultsExit()
-	}
-	if sc, ok := subCommandMap[os.Args[1]]; ok {
-		sc.Run()
-	} else {
-		printDefaultsExit()
-	}
-}
-
-const (
-	ctConvert = "convert"
-)
-
 var subCommandMap map[string]subCommand
 
 type subCommand struct {
@@ -34,7 +19,7 @@ type subCommand struct {
 func init() {
 	subCommandMap = make(map[string]subCommand)
 
-	subCommandMap[ctConvert] = subCommand{
+	subCommandMap["convert"] = subCommand{
 		"",
 		func() {
 			os.Args = os.Args[1:]
@@ -45,6 +30,7 @@ func init() {
 			convType := flag.String("t", "", "conversion type ("+strings.Join(cmd.ConvTypes(), "|")+")")
 			flag.Parse()
 			if len(*src) == 0 || len(*dst) == 0 || len(*convType) == 0 {
+				fmt.Printf("Error: missing arguments!\n\n")
 				flag.PrintDefaults()
 				os.Exit(1)
 			}
@@ -54,16 +40,26 @@ func init() {
 }
 
 func printDefaultsExit() {
-	commName := "exp-run"
 	fmt.Printf("Usage:\n\n")
-	fmt.Printf("\t%s <command> [options]\n\n", commName)
+	fmt.Printf("\t%s <command> [options]\n\n", os.Args[0])
 	fmt.Printf("Commands:\n\n")
 	for name, sc := range subCommandMap {
 		fmt.Printf("\t%v\t\t%v\n", name, sc.Description)
 	}
 	fmt.Println()
 	fmt.Printf("For usage details of each command, run:\n\n")
-	fmt.Printf("\t%s <command> --help\n", commName)
+	fmt.Printf("\t%s <command> --help\n", os.Args[0])
 	fmt.Println()
 	os.Exit(1)
+}
+
+func main() {
+	if len(os.Args) < 2 {
+		printDefaultsExit()
+	}
+	if sc, ok := subCommandMap[os.Args[1]]; ok {
+		sc.Run()
+	} else {
+		printDefaultsExit()
+	}
 }
