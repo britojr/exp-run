@@ -8,6 +8,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/britojr/bnutils/bif"
 	"github.com/britojr/exp-run/cmd"
 	"github.com/britojr/lkbn/data"
 	"github.com/britojr/lkbn/factor"
@@ -73,6 +74,8 @@ func Convert(src, dst, convType, dsname string) {
 		writeXML(ct, dst)
 	case xml2Bif:
 		writeXMLToBif(src, dst)
+	case bif2fg:
+		writeBifToFG(src, dst)
 	default:
 		log.Printf("error: invalid conversion option: (%v)\n\n", convType)
 		CmdConvert.Flag.PrintDefaults()
@@ -309,8 +312,6 @@ func writeXMLToBif(inFile, outFile string) {
 		}
 		fmt.Fprintf(f, "}\n")
 	}
-
-	return
 }
 
 func writeXML(ct *model.CTree, fname string) {
@@ -322,4 +323,29 @@ func writeXML(ct *model.CTree, fname string) {
 	data, err := xml.MarshalIndent(bn, "", "\t")
 	errchk.Check(err, "")
 	f.Write(data)
+}
+
+func writeBifToFG(src, dst string) {
+	b := bif.ParseStruct(src)
+	w := ioutl.CreateFile(dst)
+	defer w.Close()
+	fmt.Fprintf(w, "%v\n", len(b.Variables()))
+	fmt.Fprintln(w)
+	for _, v := range b.Variables() {
+		fc := b.Factor(v.Name())
+		fmt.Fprintf(w, "%v\n", len(fc.Variables()))
+		for _, u := range fc.Variables() {
+			fmt.Fprintf(w, "%v ", u.ID())
+		}
+		fmt.Fprintln(w)
+		for _, u := range fc.Variables() {
+			fmt.Fprintf(w, "%v ", u.NState())
+		}
+		fmt.Fprintln(w)
+		fmt.Fprintf(w, "%v\n", len(fc.Values()))
+		for i, vl := range fc.Values() {
+			fmt.Fprintf(w, "%v\t%v\n", i, vl)
+		}
+		fmt.Fprintln(w)
+	}
 }
