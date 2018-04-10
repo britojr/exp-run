@@ -376,8 +376,10 @@ func writeBifToUAI(src, dst string) {
 	for _, v := range b.Variables() {
 		fc := b.Factor(v.Name())
 		fmt.Fprintf(w, "%v\n", len(fc.Values()))
-		for _, u := range fc.Values() {
-			fmt.Fprintf(w, "%v ", u)
+		ixf := vars.NewOrderedIndex(fc.Variables(), fc.Variables())
+		for !ixf.Ended() {
+			fmt.Fprintf(w, "%v ", fc.Values()[ixf.I()])
+			ixf.NextRight()
 		}
 		fmt.Fprintln(w)
 		fmt.Fprintln(w)
