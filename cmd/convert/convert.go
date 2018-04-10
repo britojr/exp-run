@@ -25,7 +25,12 @@ const (
 	bi2XML  = "bi2xml"
 	xml2Bif = "xml2bif"
 	bif2fg  = "bif2fg"
+	bif2uai = "bif2uai"
 )
+
+func ConvTypes() []string {
+	return []string{bi2Bif, bi2XML, xml2Bif, bif2fg, bif2uai}
+}
 
 const CmdName = "convert"
 
@@ -51,10 +56,6 @@ func init() {
 	}
 }
 
-func ConvTypes() []string {
-	return []string{bi2Bif, bi2XML, xml2Bif, bif2fg}
-}
-
 func Convert(src, dst, convType, dsname string) {
 	log.Printf("converts: (%v) %v -> %v\n", convType, src, dst)
 	var vs vars.VarList
@@ -76,6 +77,8 @@ func Convert(src, dst, convType, dsname string) {
 		writeXMLToBif(src, dst)
 	case bif2fg:
 		writeBifToFG(src, dst)
+	case bif2uai:
+		writeBifToUAI(src, dst)
 	default:
 		log.Printf("error: invalid conversion option: (%v)\n\n", convType)
 		CmdConvert.Flag.PrintDefaults()
@@ -346,6 +349,37 @@ func writeBifToFG(src, dst string) {
 		for i, vl := range fc.Values() {
 			fmt.Fprintf(w, "%v\t%v\n", i, vl)
 		}
+		fmt.Fprintln(w)
+	}
+}
+
+func writeBifToUAI(src, dst string) {
+	b := bif.ParseStruct(src)
+	w := ioutl.CreateFile(dst)
+	defer w.Close()
+	fmt.Fprintln(w, "MARKOV")
+	fmt.Fprintf(w, "%v\n", len(b.Variables()))
+	for _, v := range b.Variables() {
+		fmt.Fprintf(w, "%v ", v.NState())
+	}
+	fmt.Fprintln(w)
+	fmt.Fprintf(w, "%v\n", len(b.Variables())) // num factor is the same as num vars for BNs
+	for _, v := range b.Variables() {
+		fc := b.Factor(v.Name())
+		fmt.Fprintf(w, "%v\t", len(fc.Variables()))
+		for _, u := range fc.Variables() {
+			fmt.Fprintf(w, "%v ", u.ID())
+		}
+		fmt.Fprintln(w)
+	}
+	fmt.Fprintln(w)
+	for _, v := range b.Variables() {
+		fc := b.Factor(v.Name())
+		fmt.Fprintf(w, "%v\n", len(fc.Values()))
+		for _, u := range fc.Values() {
+			fmt.Fprintf(w, "%v ", u)
+		}
+		fmt.Fprintln(w)
 		fmt.Fprintln(w)
 	}
 }
