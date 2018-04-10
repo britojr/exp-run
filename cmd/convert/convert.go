@@ -1,11 +1,13 @@
 package convert
 
 import (
+	"bufio"
 	"encoding/xml"
 	"flag"
 	"fmt"
 	"io"
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/britojr/bnutils/bif"
@@ -26,10 +28,12 @@ const (
 	xml2Bif = "xml2bif"
 	bif2fg  = "bif2fg"
 	bif2uai = "bif2uai"
+
+	ev2evid = "ev2evid"
 )
 
 func ConvTypes() []string {
-	return []string{bi2Bif, bi2XML, xml2Bif, bif2fg, bif2uai}
+	return []string{bi2Bif, bi2XML, xml2Bif, bif2fg, bif2uai, ev2evid}
 }
 
 const CmdName = "convert"
@@ -79,6 +83,8 @@ func Convert(src, dst, convType, dsname string) {
 		writeBifToFG(src, dst)
 	case bif2uai:
 		writeBifToUAI(src, dst)
+	case ev2evid:
+		writeEvToEvid(src, dst)
 	default:
 		log.Printf("error: invalid conversion option: (%v)\n\n", convType)
 		CmdConvert.Flag.PrintDefaults()
@@ -383,5 +389,35 @@ func writeBifToUAI(src, dst string) {
 		}
 		fmt.Fprintln(w)
 		fmt.Fprintln(w)
+	}
+}
+
+func writeEvToEvid(src, dst string) {
+	r := ioutl.OpenFile(src)
+	defer r.Close()
+	parsed := []string{}
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		if len(scanner.Text()) == 0 {
+			continue
+		}
+		psID, psVL := []string{}, []string{}
+		for i, v := range strings.Split(scanner.Text(), ",") {
+			if v != "*" {
+				psID = append(psID, strconv.Itoa(i))
+				psVL = append(psVL, v)
+			}
+		}
+		pstr := strconv.Itoa(len(psID)) + " "
+		for i := range psID {
+			pstr += psID[i] + " " + psVL[i] + " "
+		}
+		parsed = append(parsed, pstr)
+	}
+	w := ioutl.CreateFile(dst)
+	defer w.Close()
+	fmt.Fprintf(w, "%v\n", len(parsed))
+	for _, line := range parsed {
+		fmt.Fprintf(w, "%v\n", line)
 	}
 }
