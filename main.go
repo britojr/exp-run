@@ -6,12 +6,14 @@ import (
 
 	"github.com/britojr/exp-run/cmd"
 	"github.com/britojr/exp-run/cmd/convert"
+	"github.com/britojr/exp-run/cmd/fstats"
 	"github.com/britojr/exp-run/cmd/qevgen"
 )
 
 var commandMap = map[string]*cmd.Command{
 	convert.Cmd.Name: convert.Cmd,
 	qevgen.Cmd.Name:  qevgen.Cmd,
+	fstats.Cmd.Name:  fstats.Cmd,
 }
 
 func printDefaultsExit() {
