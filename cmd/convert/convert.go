@@ -21,9 +21,6 @@ import (
 	"github.com/britojr/utl/ioutl"
 )
 
-// CmdName command name
-const CmdName = "convert"
-
 // conversion types
 const (
 	bi2Bif  = "bi2bif"
@@ -39,13 +36,13 @@ func ConvTypes() []string {
 	return []string{bi2Bif, bi2XML, xml2Bif, bif2fg, bif2uai, ev2evid}
 }
 
-var CmdConvert = &cmd.Command{}
+var Cmd = &cmd.Command{}
 
 func init() {
-	CmdConvert.Short = "converts between different types of models"
-	CmdConvert.Long = "converts between different types of models"
-	CmdConvert.Flag = flag.NewFlagSet(CmdName, flag.ExitOnError)
-	CmdConvert.Run = func(cm *cmd.Command, args []string) {
+	Cmd.Name = "convert"
+	Cmd.Short = "converts between different types of models"
+	Cmd.Flag = flag.NewFlagSet(Cmd.Name, flag.ExitOnError)
+	Cmd.Run = func(cm *cmd.Command, args []string) {
 		src := cm.Flag.String("i", "", "input file")
 		dst := cm.Flag.String("o", "", "output file")
 		dsname := cm.Flag.String("d", "", "dataset file")
@@ -87,7 +84,7 @@ func Convert(src, dst, convType, dsname string) {
 		writeEvToEvid(src, dst)
 	default:
 		log.Printf("error: invalid conversion option: (%v)\n\n", convType)
-		CmdConvert.Flag.PrintDefaults()
+		Cmd.Flag.PrintDefaults()
 		return
 	}
 }
