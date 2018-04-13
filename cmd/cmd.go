@@ -5,6 +5,8 @@ import "flag"
 type Command struct {
 	// Run runs the command. The args are the arguments after the command name.
 	Run func(cm *Command, args []string)
+	// Name is the command name
+	Name string
 	// Short is a short description
 	Short string
 	// Long is a long message
