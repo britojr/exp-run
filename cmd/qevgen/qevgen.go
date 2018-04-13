@@ -1,11 +1,12 @@
 package qevgen
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"math/rand"
-	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -24,36 +25,45 @@ func init() {
 	Cmd.Short = "query and evidence generator"
 	Cmd.Flag = flag.NewFlagSet(Cmd.Name, flag.ExitOnError)
 	Cmd.Run = func(cm *cmd.Command, args []string) {
-		src := cm.Flag.String("i", "", "input file in bif format")
-		dst := cm.Flag.String("o", "", "output file in q/ev format")
+		bifFile := cm.Flag.String("i", "", "input model in bif format")
+		out := cm.Flag.String("o", "", "output file in q/ev format")
+		sample := cm.Flag.String("s", "", "sample in csv format")
 		num := cm.Flag.Int("n", 1, "number of queries/evidences to generate")
 		cm.Flag.Parse(args)
-		if len(*src) == 0 || len(*dst) == 0 {
+		if len(*bifFile) == 0 || len(*out) == 0 {
 			fmt.Printf("Error: missing arguments!\n\n")
 			cm.Flag.PrintDefaults()
 			return
 		}
-		switch path.Ext(*dst) {
-		case ".q":
-			QevGenerate(*src, *dst, *num, true)
-		case ".ev":
-			QevGenerate(*src, *dst, *num, false)
-		default:
-			fmt.Printf("\n error: output file must be '.q' or '.ev'\n\n")
-			cm.Flag.PrintDefaults()
-			return
-		}
+		QevGenerate(*bifFile, *out, *sample, *num)
 	}
 }
 
-func QevGenerate(inpFile, outFile string, num int, query bool) {
+func QevGenerate(inpFile, outFile, sampFile string, num int) {
 	b := bif.ParseStruct(inpFile)
-	f := ioutl.CreateFile(outFile)
-	defer f.Close()
-	if query {
-		sampleQuery(b, f, num)
+	fq := ioutl.CreateFile(outFile + ".q")
+	log.Printf("create %v\n", fq.Name())
+	fev := ioutl.CreateFile(outFile + ".ev")
+	log.Printf("create %v\n", fev.Name())
+	defer fq.Close()
+	defer fev.Close()
+	if len(sampFile) == 0 {
+		sampleQuery(b, fq, num)
+		sampleEvid(b, fev, num)
 	} else {
-		sampleEvid(b, f, num)
+		scanner := bufio.NewScanner(ioutl.OpenFile(sampFile))
+		for scanner.Scan() {
+			read := strings.Split(scanner.Text(), ",")
+			write := make([]string, len(read))
+			v := sampleVar(b.Roots())
+			write[v.ID()] = read[v.ID()]
+			writeLine(fq, write)
+			write[v.ID()] = ""
+			for _, w := range b.Leafs() {
+				write[w.ID()] = read[w.ID()]
+			}
+			writeLine(fev, write)
+		}
 	}
 }
 
