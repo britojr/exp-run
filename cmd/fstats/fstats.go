@@ -43,11 +43,6 @@ func FileStats(fname string) {
 
 func bifStats(fname string) {
 	b := bif.ParseStruct(fname)
-	fmt.Printf("Variables: %v\n", len(b.Variables()))
-	fmt.Printf("Roots: %v\n", len(b.Roots()))
-	fmt.Printf("Leafs: %v\n", len(b.Leafs()))
-	fmt.Printf("Internals: %v\n", len(b.Internals()))
-
 	params := 0
 	determ := false
 	unnorm := false
@@ -75,6 +70,10 @@ func bifStats(fname string) {
 
 	fmt.Printf("Names: %v\n", strings.Join(vnames, ","))
 	fmt.Printf("Schema: %v\n", strings.Join(conv.Sitoa(schema), ","))
+	fmt.Printf("Variables: %v\n", len(b.Variables()))
+	fmt.Printf("Roots: %v\n", len(b.Roots()))
+	fmt.Printf("Leafs: %v\n", len(b.Leafs()))
+	fmt.Printf("Internals: %v\n", len(b.Internals()))
 	fmt.Printf("Parameters: %v\n", params)
 	fmt.Printf("Unnormalized: %v\n", unnorm)
 	fmt.Printf("Deterministic values: %v\n", determ)
