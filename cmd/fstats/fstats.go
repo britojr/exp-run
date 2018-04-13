@@ -68,12 +68,13 @@ func bifStats(fname string) {
 		}
 	}
 
+	vs, rs, ls, is := len(b.Variables()), len(b.Roots()), len(b.Leafs()), len(b.Internals())
 	fmt.Printf("Names: %v\n", strings.Join(vnames, ","))
 	fmt.Printf("Schema: %v\n", strings.Join(conv.Sitoa(schema), ","))
-	fmt.Printf("Variables: %v\n", len(b.Variables()))
-	fmt.Printf("Roots: %v\n", len(b.Roots()))
-	fmt.Printf("Leafs: %v\n", len(b.Leafs()))
-	fmt.Printf("Internals: %v\n", len(b.Internals()))
+	fmt.Printf("Variables: %v\n", vs)
+	fmt.Printf("Roots:\t%v\t(%.2f%%)\n", rs, 100.0*float64(rs)/float64(vs))
+	fmt.Printf("Leafs:\t%v\t(%.2f%%)\n", ls, 100.0*float64(ls)/float64(vs))
+	fmt.Printf("Internals:\t%v\t(%.2f%%)\n", is, 100.0*float64(is)/float64(vs))
 	fmt.Printf("Parameters: %v\n", params)
 	fmt.Printf("Unnormalized: %v\n", unnorm)
 	fmt.Printf("Deterministic values: %v\n", determ)
