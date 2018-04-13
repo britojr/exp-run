@@ -8,11 +8,8 @@ import (
 	"github.com/britojr/exp-run/cmd/convert"
 )
 
-var commandMap map[string]*cmd.Command
-
-func init() {
-	commandMap = make(map[string]*cmd.Command)
-	commandMap[convert.CmdName] = convert.CmdConvert
+var commandMap = map[string]*cmd.Command{
+	convert.CmdName: convert.CmdConvert,
 }
 
 func printDefaultsExit() {

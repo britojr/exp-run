@@ -21,6 +21,9 @@ import (
 	"github.com/britojr/utl/ioutl"
 )
 
+// CmdName command name
+const CmdName = "convert"
+
 // conversion types
 const (
 	bi2Bif  = "bi2bif"
@@ -36,14 +39,11 @@ func ConvTypes() []string {
 	return []string{bi2Bif, bi2XML, xml2Bif, bif2fg, bif2uai, ev2evid}
 }
 
-const CmdName = "convert"
-
-var CmdConvert = &cmd.Command{
-	Short: "converts between different types of models",
-	Long:  "converts between different types of models",
-}
+var CmdConvert = &cmd.Command{}
 
 func init() {
+	CmdConvert.Short = "converts between different types of models"
+	CmdConvert.Long = "converts between different types of models"
 	CmdConvert.Flag = flag.NewFlagSet(CmdName, flag.ExitOnError)
 	CmdConvert.Run = func(cm *cmd.Command, args []string) {
 		src := cm.Flag.String("i", "", "input file")
