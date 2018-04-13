@@ -46,6 +46,7 @@ func init() {
 		src := cm.Flag.String("i", "", "input file")
 		dst := cm.Flag.String("o", "", "output file")
 		dsname := cm.Flag.String("d", "", "dataset file")
+		smooth := cm.Flag.Float64("smooth", 0.0, "smooth deterministic probs")
 		convType := cm.Flag.String("t", "", "conversion type ("+strings.Join(ConvTypes(), "|")+")")
 		cm.Flag.Parse(args)
 		if len(*src) == 0 || len(*dst) == 0 || len(*convType) == 0 {
@@ -53,11 +54,11 @@ func init() {
 			cm.Flag.PrintDefaults()
 			return
 		}
-		Convert(*src, *dst, *convType, *dsname)
+		Convert(*src, *dst, *convType, *dsname, *smooth)
 	}
 }
 
-func Convert(src, dst, convType, dsname string) {
+func Convert(src, dst, convType, dsname string, smooth float64) {
 	log.Printf("converts: (%v) %v -> %v\n", convType, src, dst)
 	var vs vars.VarList
 	if len(dsname) != 0 {
@@ -79,7 +80,7 @@ func Convert(src, dst, convType, dsname string) {
 	case bif2fg:
 		writeBifToFG(src, dst)
 	case bif2uai:
-		writeBifToUAI(src, dst)
+		writeBifToUAI(src, dst, smooth)
 	case ev2evid:
 		writeEvToEvid(src, dst)
 	default:
@@ -356,7 +357,7 @@ func writeBifToFG(src, dst string) {
 	}
 }
 
-func writeBifToUAI(src, dst string) {
+func writeBifToUAI(src, dst string, smooth float64) {
 	b := bif.ParseStruct(src)
 	w := ioutl.CreateFile(dst)
 	defer w.Close()
@@ -381,12 +382,25 @@ func writeBifToUAI(src, dst string) {
 		fmt.Fprintf(w, "%v\n", len(fc.Values()))
 		ixf := vars.NewOrderedIndex(fc.Variables(), fc.Variables())
 		for !ixf.Ended() {
-			fmt.Fprintf(w, "%v ", fc.Values()[ixf.I()])
+			fmt.Fprintf(w, "%v ", smoothValues(fc.Values(), smooth)[ixf.I()])
 			ixf.NextRight()
 		}
 		fmt.Fprintln(w)
 		fmt.Fprintln(w)
 	}
+}
+
+func smoothValues(values []float64, smooth float64) []float64 {
+	ws := append([]float64(nil), values...)
+	for i, v := range ws {
+		if v == 1.0 {
+			ws[i] = v - smooth
+		}
+		if v == 0.0 {
+			ws[i] = v + smooth
+		}
+	}
+	return ws
 }
 
 func writeEvToEvid(src, dst string) {
