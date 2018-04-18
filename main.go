@@ -11,19 +11,28 @@ import (
 	"github.com/britojr/exp-run/cmd/qevgen"
 )
 
-var commandMap = map[string]*cmd.Command{
-	convert.Cmd.Name: convert.Cmd,
-	qevgen.Cmd.Name:  qevgen.Cmd,
-	fstats.Cmd.Name:  fstats.Cmd,
-	pmlearn.Cmd.Name: pmlearn.Cmd,
+var commands = []*cmd.Command{
+	convert.Cmd,
+	fstats.Cmd,
+	qevgen.Cmd,
+	pmlearn.Cmd,
+}
+
+var commandMap map[string]*cmd.Command
+
+func init() {
+	commandMap = make(map[string]*cmd.Command)
+	for _, cm := range commands {
+		commandMap[cm.Name] = cm
+	}
 }
 
 func printDefaultsExit() {
 	fmt.Printf("Usage:\n\n")
 	fmt.Printf("\t%s <command> [options]\n\n", os.Args[0])
 	fmt.Printf("Commands:\n\n")
-	for name, cm := range commandMap {
-		fmt.Printf("\t%v\t\t%v\n", name, cm.Short)
+	for _, cm := range commands {
+		fmt.Printf("\t%v\t\t%v\n", cm.Name, cm.Short)
 	}
 	fmt.Println()
 	fmt.Printf("For usage details of each command, run:\n\n")
