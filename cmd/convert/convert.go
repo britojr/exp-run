@@ -315,13 +315,16 @@ func writeXMLToBif(inFile, outFile string) {
 				}
 				tableInd := strings.Join(attrbStr, ", ")
 				tableVal := strings.Join(tableVals[k:k+xv.NState()], ", ")
+				tableVal = strings.Replace(tableVal, "E+00", "", -1)
 				fmt.Fprintf(f, "  (%v) %v;\n", tableInd, tableVal)
 				ixf.Next()
 				k += xv.NState()
 			}
 		} else {
 			fmt.Fprintf(f, "probability ( %v ) {\n", p.For[0])
-			fmt.Fprintf(f, "  table %v;\n", strings.Replace(strings.Trim(p.Table, " "), " ", ", ", -1))
+			tableVal := strings.Replace(strings.Trim(p.Table, " "), " ", ", ", -1)
+			tableVal = strings.Replace(tableVal, "E+00", "", -1)
+			fmt.Fprintf(f, "  table %v;\n", tableVal)
 		}
 		fmt.Fprintf(f, "}\n")
 	}
