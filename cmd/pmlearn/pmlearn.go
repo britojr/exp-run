@@ -40,7 +40,7 @@ func ParmLearn(inFile, outFile, dsname string) {
 	paMap := parseParentMat(inFile)
 	ds := data.NewDataset(dsname, false)
 	bn := buildStruct(ds.Variables(), paMap)
-	learnParms(bn, ds)
+	learnParms(bn, ds.IntMaps())
 	log.Printf("writing %v\n", outFile)
 	bn.Write(outFile)
 }
@@ -76,6 +76,34 @@ func buildStruct(vs vars.VarList, paMap map[int][]int) *model.BNet {
 	return bn
 }
 
-func learnParms(bn *model.BNet, ds *data.Dataset) {
+func learnParms(bn *model.BNet, ds []map[int]int) {
+	for _, v := range bn.Variables() {
+		nd := bn.Node(v)
+		family := nd.Potential().Variables()
+		pjoint, err := factor.New(family...).SetValues(
+			countValues(ds, family),
+		).Normalize(v)
+		if err != nil {
+			log.Printf("warning: var %v, %v\n", v, err.Error())
+		}
+		nd.SetPotential(pjoint)
+	}
+}
 
+func countValues(ds []map[int]int, vs []*vars.Var) []float64 {
+	strides := make(map[int]int)
+	step := 1
+	for _, v := range vs {
+		strides[v.ID()] = step
+		step *= v.NState()
+	}
+	count := make([]float64, step)
+	for _, line := range ds {
+		index := 0
+		for id, step := range strides {
+			index += line[id] * step
+		}
+		count[index]++
+	}
+	return count
 }
