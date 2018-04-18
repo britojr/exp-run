@@ -26,20 +26,21 @@ func init() {
 	Cmd.Flag = flag.NewFlagSet(Cmd.Name, flag.ExitOnError)
 	Cmd.Run = func(cm *cmd.Command, args []string) {
 		bifFile := cm.Flag.String("i", "", "input model in bif format")
-		out := cm.Flag.String("o", "", "output file in q/ev format")
+		out := cm.Flag.String("o", "", "basename of file to write q/ev format")
 		sample := cm.Flag.String("s", "", "sample in csv format")
 		num := cm.Flag.Int("n", 1, "number of queries/evidences to generate")
+		maxLfs := cm.Flag.Int("maxlfs", -1, "max number of leafs to use as evidence")
 		cm.Flag.Parse(args)
 		if len(*bifFile) == 0 || len(*out) == 0 {
 			fmt.Printf("Error: missing arguments!\n\n")
 			cm.Flag.PrintDefaults()
 			return
 		}
-		QevGenerate(*bifFile, *out, *sample, *num)
+		QevGenerate(*bifFile, *out, *sample, *num, *maxLfs)
 	}
 }
 
-func QevGenerate(inpFile, outFile, sampFile string, num int) {
+func QevGenerate(inpFile, outFile, sampFile string, num, maxLfs int) {
 	b := bif.ParseStruct(inpFile)
 	fq := ioutl.CreateFile(outFile + ".q")
 	log.Printf("create %v\n", fq.Name())
@@ -48,31 +49,47 @@ func QevGenerate(inpFile, outFile, sampFile string, num int) {
 	defer fq.Close()
 	defer fev.Close()
 	if len(sampFile) == 0 {
-		sampleQuery(b, fq, num)
-		sampleEvid(b, fev, num)
+		for i := 0; i < num; i++ {
+			sampleLine(b, fq, fev, nil, maxLfs)
+		}
 	} else {
 		scanner := bufio.NewScanner(ioutl.OpenFile(sampFile))
 		for scanner.Scan() {
 			read := strings.Split(scanner.Text(), ",")
-			write := make([]string, len(read))
-			v := sampleVar(b.Roots())
-			write[v.ID()] = read[v.ID()]
-			writeLine(fq, write)
-			write[v.ID()] = ""
-			for _, w := range b.Leafs() {
-				write[w.ID()] = read[w.ID()]
-			}
-			writeLine(fev, write)
+			sampleLine(b, fq, fev, read, maxLfs)
 		}
 	}
+}
+
+func sampleLine(b *bif.Struct, fq, fev io.Writer, read []string, maxLfs int) {
+	write := make([]string, len(b.Variables()))
+	v := sampleVar(b.Roots())
+	write[v.ID()] = sampleState(v, read)
+	writeLine(fq, write)
+	write[v.ID()] = ""
+	lfs := b.Leafs()
+	if maxLfs < 0 || maxLfs > len(lfs) {
+		maxLfs = len(lfs)
+	} else {
+		randSource.Shuffle(len(lfs), func(i int, j int) {
+			lfs[i], lfs[j] = lfs[j], lfs[i]
+		})
+	}
+	for _, w := range lfs[:maxLfs] {
+		write[w.ID()] = sampleState(w, read)
+	}
+	writeLine(fev, write)
 }
 
 func sampleVar(vs vars.VarList) *vars.Var {
 	return vs[randSource.Intn(len(vs))]
 }
 
-func sampleState(v *vars.Var) int {
-	return randSource.Intn(v.NState())
+func sampleState(v *vars.Var, line []string) string {
+	if len(line) > 0 {
+		return line[v.ID()]
+	}
+	return strconv.Itoa(randSource.Intn(v.NState()))
 }
 
 func writeLine(w io.Writer, line []string) {
@@ -82,24 +99,4 @@ func writeLine(w io.Writer, line []string) {
 		}
 	}
 	fmt.Fprintf(w, "%s\n", strings.Join(line, ","))
-}
-
-func sampleQuery(b *bif.Struct, w io.Writer, num int) {
-	for i := 0; i < num; i++ {
-		v := sampleVar(b.Roots())
-		state := sampleState(v)
-		line := make([]string, len(b.Variables()))
-		line[v.ID()] = strconv.Itoa(state)
-		writeLine(w, line)
-	}
-}
-
-func sampleEvid(b *bif.Struct, w io.Writer, num int) {
-	for i := 0; i < num; i++ {
-		line := make([]string, len(b.Variables()))
-		for _, v := range b.Leafs() {
-			line[v.ID()] = strconv.Itoa(sampleState(v))
-		}
-		writeLine(w, line)
-	}
 }
