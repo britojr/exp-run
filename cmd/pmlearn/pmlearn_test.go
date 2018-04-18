@@ -8,6 +8,7 @@ import (
 	"github.com/britojr/lkbn/factor"
 	"github.com/britojr/lkbn/model"
 	"github.com/britojr/lkbn/vars"
+	"github.com/britojr/utl/conv"
 )
 
 func TestCountValues(t *testing.T) {
@@ -105,22 +106,22 @@ func TestLearnParms(t *testing.T) {
 
 func TestBuildStruct(t *testing.T) {
 	vl := []*vars.Var{
-		vars.New(0, 2, "", false),
-		vars.New(1, 2, "", false),
-		vars.New(2, 2, "", false),
-		vars.New(3, 2, "", false),
-		vars.New(4, 2, "", false),
+		vars.New(0, 2, "0", false),
+		vars.New(1, 2, "1", false),
+		vars.New(2, 2, "2", false),
+		vars.New(3, 2, "3", false),
+		vars.New(4, 2, "4", false),
 	}
 	cases := []struct {
 		vs    []*vars.Var
-		paMap map[int][]int
+		paMap map[string][]string
 	}{{
-		vl, map[int][]int{
-			0: []int{4, 2},
-			1: []int{4},
-			2: []int{},
-			3: []int{0, 1},
-			4: []int{},
+		vl, map[string][]string{
+			"0": []string{"4", "2"},
+			"1": []string{"4"},
+			"2": []string{},
+			"3": []string{"0", "1"},
+			"4": []string{},
 		},
 	}}
 	for _, tt := range cases {
@@ -134,11 +135,11 @@ func TestBuildStruct(t *testing.T) {
 				t.Errorf("nil node (%v)", v)
 			}
 			got := nd.Parents()
-			res := tt.paMap[v.ID()]
-			sort.Ints(res)
-			if !reflect.DeepEqual(got.DumpAsInts(), res) {
+			res := tt.paMap[v.Name()]
+			sort.Strings(res)
+			if !reflect.DeepEqual(conv.Sitoa(got.DumpAsInts()), res) {
 				t.Errorf("wrong parents of %v, want\n%v\ngot\n%v\n",
-					v, got.DumpAsInts(), res,
+					v.Name(), got.DumpAsInts(), res,
 				)
 			}
 		}

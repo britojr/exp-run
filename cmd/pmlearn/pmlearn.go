@@ -12,7 +12,6 @@ import (
 	"github.com/britojr/lkbn/factor"
 	"github.com/britojr/lkbn/model"
 	"github.com/britojr/lkbn/vars"
-	"github.com/britojr/utl/conv"
 	"github.com/britojr/utl/ioutl"
 )
 
@@ -37,16 +36,21 @@ func init() {
 }
 
 func ParmLearn(inFile, outFile, dsname string) {
-	paMap := parseParentMat(inFile)
+	paMap, vNames := parseParentMat(inFile)
 	ds := data.NewDataset(dsname, false)
-	bn := buildStruct(ds.Variables(), paMap)
+	vs := ds.Variables()
+	for i, name := range vNames {
+		vs.FindByID(i).SetName(name)
+	}
+	bn := buildStruct(vs, paMap)
 	learnParms(bn, ds.IntMaps())
 	log.Printf("writing %v\n", outFile)
 	bn.Write(outFile)
 }
 
-func parseParentMat(fname string) map[int][]int {
-	paMap := make(map[int][]int)
+func parseParentMat(fname string) (map[string][]string, []string) {
+	paMap := make(map[string][]string)
+	var vNames []string
 	r := ioutl.OpenFile(fname)
 	defer r.Close()
 	scanner := bufio.NewScanner(r)
@@ -56,18 +60,19 @@ func parseParentMat(fname string) map[int][]int {
 		if len(line) < 2 {
 			break
 		}
+		vNames = append(vNames, line[0])
 		paStr := strings.Split(line[1], ",")
-		paMap[conv.Atoi(line[0])] = conv.Satoi(paStr[:len(paStr)-1])
+		paMap[line[0]] = paStr[:len(paStr)-1]
 	}
-	return paMap
+	return paMap, vNames
 }
 
-func buildStruct(vs vars.VarList, paMap map[int][]int) *model.BNet {
+func buildStruct(vs vars.VarList, paMap map[string][]string) *model.BNet {
 	bn := model.NewBNet()
 	for _, v := range vs {
 		family := vars.VarList{v}
-		for _, j := range paMap[v.ID()] {
-			family.Add(vs.FindByID(j))
+		for _, j := range paMap[v.Name()] {
+			family.Add(vs.FindByName(j))
 		}
 		nd := model.NewBNode(v)
 		nd.SetPotential(factor.NewZeroes(family...))
