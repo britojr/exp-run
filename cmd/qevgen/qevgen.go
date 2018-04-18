@@ -32,7 +32,7 @@ func init() {
 		maxLfs := cm.Flag.Int("maxlfs", -1, "max number of leafs to use as evidence")
 		cm.Flag.Parse(args)
 		if len(*bifFile) == 0 || len(*out) == 0 {
-			fmt.Printf("Error: missing arguments!\n\n")
+			log.Printf("error: missing arguments!\n")
 			cm.Flag.PrintDefaults()
 			return
 		}

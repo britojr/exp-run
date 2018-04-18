@@ -3,7 +3,6 @@ package pmlearn
 import (
 	"bufio"
 	"flag"
-	"fmt"
 	"log"
 	"strings"
 
@@ -27,7 +26,7 @@ func init() {
 		dsname := cm.Flag.String("d", "", "dataset file")
 		cm.Flag.Parse(args)
 		if len(*src) == 0 || len(*dst) == 0 || len(*dsname) == 0 {
-			fmt.Printf("Error: missing arguments!\n\n")
+			log.Printf("error: missing arguments!\n")
 			cm.Flag.PrintDefaults()
 			return
 		}

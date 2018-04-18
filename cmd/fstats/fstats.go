@@ -3,6 +3,7 @@ package fstats
 import (
 	"flag"
 	"fmt"
+	"log"
 	"path"
 	"strings"
 
@@ -22,7 +23,7 @@ func init() {
 		src := cm.Flag.String("i", "", "input file")
 		cm.Flag.Parse(args)
 		if len(*src) == 0 {
-			fmt.Printf("Error: missing arguments!\n\n")
+			log.Printf("error: missing arguments!\n")
 			cm.Flag.PrintDefaults()
 			return
 		}
