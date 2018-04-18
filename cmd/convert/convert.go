@@ -30,11 +30,10 @@ const (
 	bif2uai = "bif2uai"
 
 	ev2evid = "ev2evid"
-	pss2jkl = "pss2jkl"
 )
 
 func ConvTypes() []string {
-	return []string{bi2Bif, bi2XML, xml2Bif, bif2fg, bif2uai, ev2evid, pss2jkl}
+	return []string{bi2Bif, bi2XML, xml2Bif, bif2fg, bif2uai, ev2evid}
 }
 
 var Cmd = &cmd.Command{}
@@ -84,8 +83,6 @@ func Convert(src, dst, convType, dsname string, smooth float64) {
 		writeBifToUAI(src, dst, smooth)
 	case ev2evid:
 		writeEvToEvid(src, dst)
-	case pss2jkl:
-		writePssToJkl(src, dst)
 	default:
 		log.Printf("error: invalid conversion option: (%v)\n\n", convType)
 		Cmd.Flag.PrintDefaults()
@@ -440,19 +437,4 @@ func writeEvToEvid(src, dst string) {
 	for _, line := range parsed {
 		fmt.Fprintf(w, "%v\n", line)
 	}
-}
-
-func writePssToJkl(src, dst string) {
-	r := ioutl.OpenFile(src)
-	defer r.Close()
-	scanner := bufio.NewScanner(r)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if len(line) == 0 || strings.Index(line, "META") >= 0 {
-			continue
-		}
-		log.Println(line)
-	}
-	w := ioutl.CreateFile(dst)
-	defer w.Close()
 }
