@@ -30,10 +30,11 @@ const (
 	bif2uai = "bif2uai"
 
 	ev2evid = "ev2evid"
+	pss2jkl = "pss2jkl"
 )
 
 func ConvTypes() []string {
-	return []string{bi2Bif, bi2XML, xml2Bif, bif2fg, bif2uai, ev2evid}
+	return []string{bi2Bif, bi2XML, xml2Bif, bif2fg, bif2uai, ev2evid, pss2jkl}
 }
 
 var Cmd = &cmd.Command{}
@@ -83,6 +84,8 @@ func Convert(src, dst, convType, dsname string, smooth float64) {
 		writeBifToUAI(src, dst, smooth)
 	case ev2evid:
 		writeEvToEvid(src, dst)
+	case pss2jkl:
+		writePssToJkl(src, dst)
 	default:
 		log.Printf("error: invalid conversion option: (%v)\n\n", convType)
 		Cmd.Flag.PrintDefaults()
@@ -281,6 +284,9 @@ func writeXMLToBif(inFile, outFile string) {
 
 	f := ioutl.CreateFile(outFile)
 	defer f.Close()
+	if len(xmlbn.Name) == 0 {
+		xmlbn.Name = "unknown"
+	}
 	fmt.Fprintf(f, "network %v {}\n", xmlbn.Name)
 	vs := vars.VarList{}
 	for i, v := range xmlbn.Variables {
@@ -292,7 +298,7 @@ func writeXMLToBif(inFile, outFile string) {
 	}
 	for _, p := range xmlbn.Probs {
 		if len(p.Given) > 0 {
-			fmt.Fprintf(f, "probability ( %v | %v ) {\n", p.For, strings.Join(p.Given, ", "))
+			fmt.Fprintf(f, "probability ( %v | %v ) {\n", p.For[0], strings.Join(p.Given, ", "))
 			xv := vs.FindByName(p.For[0])
 			pavs := []*vars.Var{}
 			for _, name := range p.Given {
@@ -314,7 +320,7 @@ func writeXMLToBif(inFile, outFile string) {
 				k += xv.NState()
 			}
 		} else {
-			fmt.Fprintf(f, "probability ( %v ) {\n", p.For)
+			fmt.Fprintf(f, "probability ( %v ) {\n", p.For[0])
 			fmt.Fprintf(f, "  table %v;\n", strings.Replace(strings.Trim(p.Table, " "), " ", ", ", -1))
 		}
 		fmt.Fprintf(f, "}\n")
@@ -431,4 +437,19 @@ func writeEvToEvid(src, dst string) {
 	for _, line := range parsed {
 		fmt.Fprintf(w, "%v\n", line)
 	}
+}
+
+func writePssToJkl(src, dst string) {
+	r := ioutl.OpenFile(src)
+	defer r.Close()
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if len(line) == 0 || strings.Index(line, "META") >= 0 {
+			continue
+		}
+		log.Println(line)
+	}
+	w := ioutl.CreateFile(dst)
+	defer w.Close()
 }
