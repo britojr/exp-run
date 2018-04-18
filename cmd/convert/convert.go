@@ -29,11 +29,12 @@ const (
 	bif2fg  = "bif2fg"
 	bif2uai = "bif2uai"
 
-	ev2evid = "ev2evid"
+	ev2evid  = "ev2evid"
+	csv2arff = "csv2arff"
 )
 
 func ConvTypes() []string {
-	return []string{bi2Bif, bi2XML, xml2Bif, bif2fg, bif2uai, ev2evid}
+	return []string{bi2Bif, bi2XML, xml2Bif, bif2fg, bif2uai, ev2evid, csv2arff}
 }
 
 var Cmd = &cmd.Command{}
@@ -46,19 +47,20 @@ func init() {
 		src := cm.Flag.String("i", "", "input file")
 		dst := cm.Flag.String("o", "", "output file")
 		dsname := cm.Flag.String("d", "", "dataset file")
+		bname := cm.Flag.String("b", "", "bnet bif file")
 		smooth := cm.Flag.Float64("smooth", 0.0, "smooth deterministic probs")
 		convType := cm.Flag.String("t", "", "conversion type ("+strings.Join(ConvTypes(), "|")+")")
 		cm.Flag.Parse(args)
 		if len(*src) == 0 || len(*dst) == 0 || len(*convType) == 0 {
-			fmt.Printf("Error: missing arguments!\n\n")
+			log.Printf("error: missing arguments!\n")
 			cm.Flag.PrintDefaults()
 			return
 		}
-		Convert(*src, *dst, *convType, *dsname, *smooth)
+		Convert(*src, *dst, *convType, *dsname, *bname, *smooth)
 	}
 }
 
-func Convert(src, dst, convType, dsname string, smooth float64) {
+func Convert(src, dst, convType, dsname, bname string, smooth float64) {
 	log.Printf("converts: (%v) %v -> %v\n", convType, src, dst)
 	var vs vars.VarList
 	if len(dsname) != 0 {
@@ -83,6 +85,13 @@ func Convert(src, dst, convType, dsname string, smooth float64) {
 		writeBifToUAI(src, dst, smooth)
 	case ev2evid:
 		writeEvToEvid(src, dst)
+	case csv2arff:
+		if len(bname) == 0 {
+			log.Printf("error: bnet file needed\n")
+			Cmd.Flag.PrintDefaults()
+			return
+		}
+		writeCsvToArff(src, dst, bname)
 	default:
 		log.Printf("error: invalid conversion option: (%v)\n\n", convType)
 		Cmd.Flag.PrintDefaults()
@@ -437,4 +446,23 @@ func writeEvToEvid(src, dst string) {
 	for _, line := range parsed {
 		fmt.Fprintf(w, "%v\n", line)
 	}
+}
+
+func writeCsvToArff(src, dst, bname string) {
+	b := bif.ParseStruct(bname)
+	hdr := "@relation data\n"
+	for _, v := range b.Variables() {
+		states := make([]string, v.NState())
+		for j := range states {
+			states[j] = strconv.Itoa(j)
+		}
+		hdr += fmt.Sprintf("@attribute %s {%s}\n", v.Name(), strings.Join(states, ","))
+	}
+	hdr += "@data"
+
+	r := ioutl.OpenFile(src)
+	w := ioutl.CreateFile(dst)
+	fmt.Fprintln(w, hdr)
+	_, err := io.Copy(w, r)
+	errchk.Check(err, "")
 }
