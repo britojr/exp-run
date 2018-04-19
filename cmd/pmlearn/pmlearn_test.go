@@ -95,7 +95,7 @@ func TestLearnParms(t *testing.T) {
 		{0, 1, 1, 0, 2.0 / 3.0, .5, 1.0 / 3.0, .5},
 		{.2, .8},
 	}
-	learnParms(bn, ds)
+	learnParms(bn, ds, 0)
 	for _, v := range vs {
 		got := bn.Node(v).Potential().Values()
 		if !reflect.DeepEqual(result[v.ID()], got) {

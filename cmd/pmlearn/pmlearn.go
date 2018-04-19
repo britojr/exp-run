@@ -24,17 +24,18 @@ func init() {
 		src := cm.Flag.String("i", "", "input file (in list of parents format)")
 		dst := cm.Flag.String("o", "", "output file (xml format)")
 		dsname := cm.Flag.String("d", "", "dataset file")
+		alpha := cm.Flag.Float64("alpha", 0, "smoothing constant to avoid zero probabilities")
 		cm.Flag.Parse(args)
 		if len(*src) == 0 || len(*dst) == 0 || len(*dsname) == 0 {
 			log.Printf("error: missing arguments!\n")
 			cm.Flag.PrintDefaults()
 			return
 		}
-		ParmLearn(*src, *dst, *dsname)
+		ParmLearn(*src, *dst, *dsname, *alpha)
 	}
 }
 
-func ParmLearn(inFile, outFile, dsname string) {
+func ParmLearn(inFile, outFile, dsname string, alpha float64) {
 	paMap, vNames := parseParentMat(inFile)
 	ds := data.NewDataset(dsname, false)
 	vs := ds.Variables()
@@ -42,7 +43,7 @@ func ParmLearn(inFile, outFile, dsname string) {
 		vs.FindByID(i).SetName(name)
 	}
 	bn := buildStruct(vs, paMap)
-	learnParms(bn, ds.IntMaps())
+	learnParms(bn, ds.IntMaps(), alpha)
 	log.Printf("writing %v\n", outFile)
 	bn.Write(outFile)
 }
@@ -80,13 +81,17 @@ func buildStruct(vs vars.VarList, paMap map[string][]string) *model.BNet {
 	return bn
 }
 
-func learnParms(bn *model.BNet, ds []map[int]int) {
+func learnParms(bn *model.BNet, ds []map[int]int, alpha float64) {
 	for _, v := range bn.Variables() {
 		nd := bn.Node(v)
 		family := nd.Potential().Variables()
-		pjoint, err := factor.New(family...).SetValues(
-			countValues(ds, family),
-		).Normalize(v)
+		values := countValues(ds, family)
+		if alpha > 0 {
+			for i := range values {
+				values[i] += alpha
+			}
+		}
+		pjoint, err := factor.New(family...).SetValues(values).Normalize(v)
 		if err != nil {
 			log.Printf("warning: var %v, %v\n", v, err.Error())
 		}
