@@ -22,7 +22,7 @@ func init() {
 	Cmd.Flag = flag.NewFlagSet(Cmd.Name, flag.ExitOnError)
 	Cmd.Run = func(cm *cmd.Command, args []string) {
 		src := cm.Flag.String("i", "", "input file (in list of parents format)")
-		dst := cm.Flag.String("o", "", "output file")
+		dst := cm.Flag.String("o", "", "output file (xml format)")
 		dsname := cm.Flag.String("d", "", "dataset file")
 		cm.Flag.Parse(args)
 		if len(*src) == 0 || len(*dst) == 0 || len(*dsname) == 0 {
