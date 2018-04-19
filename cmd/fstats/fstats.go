@@ -10,6 +10,7 @@ import (
 	"github.com/britojr/bnutils/bif"
 	"github.com/britojr/exp-run/cmd"
 	"github.com/britojr/utl/conv"
+	"github.com/britojr/utl/errchk"
 	"github.com/gonum/floats"
 )
 
@@ -43,7 +44,8 @@ func FileStats(fname string) {
 }
 
 func bifStats(fname string) {
-	b := bif.ParseStruct(fname)
+	b, err := bif.ParseStruct(fname)
+	errchk.Check(err, "")
 	params := 0
 	determ := false
 	unnorm := false

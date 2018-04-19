@@ -14,6 +14,7 @@ import (
 	"github.com/britojr/bnutils/bif"
 	"github.com/britojr/exp-run/cmd"
 	"github.com/britojr/lkbn/vars"
+	"github.com/britojr/utl/errchk"
 	"github.com/britojr/utl/ioutl"
 )
 
@@ -41,7 +42,8 @@ func init() {
 }
 
 func QevGenerate(inpFile, outFile, sampFile string, num, maxLfs int) {
-	b := bif.ParseStruct(inpFile)
+	b, err := bif.ParseStruct(inpFile)
+	errchk.Check(err, "")
 	fq := ioutl.CreateFile(outFile + ".q")
 	log.Printf("create %v\n", fq.Name())
 	fev := ioutl.CreateFile(outFile + ".ev")

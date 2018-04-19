@@ -348,7 +348,8 @@ func writeXML(ct *model.CTree, fname string) {
 }
 
 func writeBifToFG(src, dst string) {
-	b := bif.ParseStruct(src)
+	b, err := bif.ParseStruct(src)
+	errchk.Check(err, "")
 	w := ioutl.CreateFile(dst)
 	defer w.Close()
 	fmt.Fprintf(w, "%v\n", len(b.Variables()))
@@ -373,7 +374,8 @@ func writeBifToFG(src, dst string) {
 }
 
 func writeBifToUAI(src, dst string, smooth float64) {
-	b := bif.ParseStruct(src)
+	b, err := bif.ParseStruct(src)
+	errchk.Check(err, "")
 	w := ioutl.CreateFile(dst)
 	defer w.Close()
 	fmt.Fprintln(w, "MARKOV")
@@ -449,7 +451,8 @@ func writeEvToEvid(src, dst string) {
 }
 
 func writeCsvToArff(src, dst, bname string) {
-	b := bif.ParseStruct(bname)
+	b, err := bif.ParseStruct(bname)
+	errchk.Check(err, "")
 	hdr := "@relation data\n"
 	for _, v := range b.Variables() {
 		states := make([]string, v.NState())
@@ -463,6 +466,6 @@ func writeCsvToArff(src, dst, bname string) {
 	r := ioutl.OpenFile(src)
 	w := ioutl.CreateFile(dst)
 	fmt.Fprintln(w, hdr)
-	_, err := io.Copy(w, r)
+	_, err = io.Copy(w, r)
 	errchk.Check(err, "")
 }
