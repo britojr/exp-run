@@ -7,6 +7,7 @@ import (
 	"github.com/britojr/exp-run/cmd"
 	"github.com/britojr/exp-run/cmd/convert"
 	"github.com/britojr/exp-run/cmd/fstats"
+	"github.com/britojr/exp-run/cmd/inference"
 	"github.com/britojr/exp-run/cmd/pmlearn"
 	"github.com/britojr/exp-run/cmd/qevgen"
 )
@@ -16,6 +17,7 @@ var commands = []*cmd.Command{
 	fstats.Cmd,
 	qevgen.Cmd,
 	pmlearn.Cmd,
+	inference.Cmd,
 }
 
 var commandMap map[string]*cmd.Command
