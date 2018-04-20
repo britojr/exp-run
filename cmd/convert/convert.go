@@ -23,18 +23,18 @@ import (
 
 // conversion types
 const (
-	bi2Bif  = "bi2bif"
-	bi2XML  = "bi2xml"
-	xml2Bif = "xml2bif"
-	bif2fg  = "bif2fg"
-	bif2uai = "bif2uai"
+	Bi2bif  = "bi2bif"
+	Bi2xml  = "bi2xml"
+	Xml2bif = "xml2bif"
+	Bif2fg  = "bif2fg"
+	Bif2uai = "bif2uai"
 
-	ev2evid  = "ev2evid"
-	csv2arff = "csv2arff"
+	Ev2evid  = "ev2evid"
+	Csv2arff = "csv2arff"
 )
 
 func ConvTypes() []string {
-	return []string{bi2Bif, bi2XML, xml2Bif, bif2fg, bif2uai, ev2evid, csv2arff}
+	return []string{Bi2bif, Bi2xml, Xml2bif, Bif2fg, Bif2uai, Ev2evid, Csv2arff}
 }
 
 var Cmd = &cmd.Command{}
@@ -69,23 +69,23 @@ func Convert(src, dst, convType, dsname, bname string, smooth float64) {
 		vs = []*vars.Var{}
 	}
 	switch convType {
-	case bi2Bif:
+	case Bi2bif:
 		potentials, _ := parseLTMbif(src, vs)
 		ct := buildCTree(potentials)
 		writeBif(ct, dst)
-	case bi2XML:
+	case Bi2xml:
 		potentials, _ := parseLTMbif(src, vs)
 		ct := buildCTree(potentials)
 		writeXML(ct, dst)
-	case xml2Bif:
+	case Xml2bif:
 		writeXMLToBif(src, dst)
-	case bif2fg:
+	case Bif2fg:
 		writeBifToFG(src, dst)
-	case bif2uai:
+	case Bif2uai:
 		writeBifToUAI(src, dst, smooth)
-	case ev2evid:
+	case Ev2evid:
 		writeEvToEvid(src, dst)
-	case csv2arff:
+	case Csv2arff:
 		if len(bname) == 0 {
 			log.Printf("error: bnet file needed\n")
 			Cmd.Flag.PrintDefaults()
