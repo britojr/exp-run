@@ -8,10 +8,14 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/britojr/exp-run/cmd"
 	"github.com/britojr/exp-run/cmd/convert"
+	"github.com/britojr/utl/cmdsh"
+	"github.com/britojr/utl/conv"
 	"github.com/britojr/utl/ioutl"
+	"github.com/gonum/floats"
 )
 
 var Cmd = &cmd.Command{}
@@ -35,7 +39,8 @@ func init() {
 }
 
 func Infer(mFile, qFile, evFile string) {
-	dainame := strings.TrimSuffix(mFile, filepath.Ext(mFile)) + ".uai"
+	basename := strings.TrimSuffix(mFile, filepath.Ext(mFile))
+	dainame := basename + ".uai"
 	convert.Convert(mFile, dainame, convert.Bif2uai, "", "", 0.0)
 	daiEv, daiQu := dainame+".evid", dainame+".quer"
 	qevFile := dainame + ".temp"
@@ -43,7 +48,10 @@ func Infer(mFile, qFile, evFile string) {
 	mergeQev(qFile, evFile, qevFile)
 	convert.Convert(qevFile, daiQu, convert.Ev2evid, "", "", 0.0)
 	convert.Convert(evFile, daiEv, convert.Ev2evid, "", "", 0.0)
-
+	probQev := computeProb(dainame, daiQu)
+	probEv := computeProb(dainame, daiEv)
+	floats.Sub(probQev, probEv)
+	writeProbs(basename+".infkey", probQev)
 }
 
 func mergeQev(qFile, evFile, qevFile string) {
@@ -65,4 +73,47 @@ func mergeQev(qFile, evFile, qevFile string) {
 		}
 		fmt.Fprintln(w, strings.Join(line, ","))
 	}
+}
+
+func computeProb(mdName, evName string) []float64 {
+	seed := time.Now().UnixNano()
+	cmdsh.ExecPrint(fmt.Sprintf(
+		"uai2010-aie-solver %s %s %v PR",
+		mdName, evName, seed,
+	), 0)
+	return parsePR(mdName + ".PR")
+}
+
+func writeProbs(fname string, probs []float64) {
+	w := ioutl.CreateFile(fname)
+	defer w.Close()
+	sum := 0.0
+	for _, v := range probs {
+		sum += v
+		fmt.Fprintf(w, "%.8f\n", v)
+	}
+	if len(probs) > 0 {
+		fmt.Fprintf(w, "avg = %.8f\n", sum/float64(len(probs)))
+	}
+}
+
+func parsePR(fname string) (fs []float64) {
+	r := ioutl.OpenFile(fname)
+	defer r.Close()
+	scanner := bufio.NewScanner(r)
+	scanner.Scan() //read PR header
+	for scanner.Scan() {
+		if strings.Index(scanner.Text(), "BEGIN") >= 0 {
+			continue
+		}
+		n := conv.Atoi(scanner.Text())
+		if len(fs) < n {
+			fs = make([]float64, n)
+		}
+		for i := 0; i < n; i++ {
+			scanner.Scan()
+			fs[i] = conv.Atof(scanner.Text())
+		}
+	}
+	return
 }
