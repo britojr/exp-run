@@ -28,30 +28,42 @@ func init() {
 		mFile := cm.Flag.String("m", "", "input model in bif format")
 		qFile := cm.Flag.String("q", "", "query file")
 		evFile := cm.Flag.String("ev", "", "evidence file")
+		logFile := cm.Flag.String("log", "", "output file")
 		cm.Flag.Parse(args)
 		if len(*mFile) == 0 || len(*qFile) == 0 {
 			log.Printf("error: missing arguments!\n")
 			cm.Flag.PrintDefaults()
 			return
 		}
-		Infer(*mFile, *qFile, *evFile)
+		Infer(*mFile, *qFile, *evFile, *logFile)
 	}
 }
 
-func Infer(mFile, qFile, evFile string) {
+func Infer(mFile, qFile, evFile, logFile string) {
 	basename := strings.TrimSuffix(mFile, filepath.Ext(mFile))
 	dainame := basename + ".uai"
 	convert.Convert(mFile, dainame, convert.Bif2uai, "", "", 0.0)
-	daiEv, daiQu := dainame+".evid", dainame+".quer"
-	qevFile := dainame + ".temp"
-	defer os.Remove(qevFile)
-	mergeQev(qFile, evFile, qevFile)
-	convert.Convert(qevFile, daiQu, convert.Ev2evid, "", "", 0.0)
-	convert.Convert(evFile, daiEv, convert.Ev2evid, "", "", 0.0)
-	probQev := computeProb(dainame, daiQu)
-	probEv := computeProb(dainame, daiEv)
-	floats.Sub(probQev, probEv)
-	writeProbs(basename+".infkey", probQev)
+	var probQev []float64
+	if len(evFile) != 0 {
+		daiEv, daiQu := dainame+".evid", dainame+".quer"
+		qevFile := dainame + ".temp"
+		defer os.Remove(qevFile)
+		mergeQev(qFile, evFile, qevFile)
+		convert.Convert(qevFile, daiQu, convert.Ev2evid, "", "", 0.0)
+		convert.Convert(evFile, daiEv, convert.Ev2evid, "", "", 0.0)
+		probQev = computeProb(dainame, daiQu)
+		probEv := computeProb(dainame, daiEv)
+		floats.Sub(probQev, probEv)
+	} else {
+		daiQu := dainame + ".quer"
+		convert.Convert(qFile, daiQu, convert.Ev2evid, "", "", 0.0)
+		probQev = computeProb(dainame, daiQu)
+	}
+	if len(logFile) == 0 {
+		writeProbs(basename+".infkey", probQev)
+	} else {
+		writeProbs(logFile, probQev)
+	}
 }
 
 func mergeQev(qFile, evFile, qevFile string) {
