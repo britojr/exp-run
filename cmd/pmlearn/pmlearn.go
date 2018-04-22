@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/britojr/exp-run/cmd"
@@ -56,13 +57,14 @@ func parseParentMat(fname string) (map[string][]string, []string) {
 	scanner := bufio.NewScanner(r)
 	paSep := "<-"
 	for scanner.Scan() {
-		line := strings.SplitN(scanner.Text(), paSep, 2)
+		text := strings.Replace(scanner.Text(), ":", paSep, 1)
+		text = strings.Replace(text, ",", " ", -1)
+		line := strings.SplitN(text, paSep, 2)
 		if len(line) < 2 {
-			break
+			continue
 		}
 		vNames = append(vNames, line[0])
-		paStr := strings.Split(line[1], ",")
-		paMap[line[0]] = paStr[:len(paStr)-1]
+		paMap[line[0]] = strings.Fields(line[1])
 	}
 	return paMap, vNames
 }
@@ -71,8 +73,30 @@ func buildStruct(vs vars.VarList, paMap map[string][]string) *model.BNet {
 	bn := model.NewBNet()
 	for _, v := range vs {
 		family := vars.VarList{v}
-		for _, j := range paMap[v.Name()] {
-			family.Add(vs.FindByName(j))
+		paList, ok := paMap[v.Name()]
+		if !ok {
+			paList, ok = paMap[strconv.Itoa(v.ID())]
+			if !ok {
+				log.Printf("warning: cannot find parent list of '%v'\n", v.Name())
+				continue
+			}
+		}
+		for _, j := range paList {
+			if pa := vs.FindByName(j); pa != nil {
+				family.Add(pa)
+				continue
+			}
+			if id, err := strconv.Atoi(j); err == nil && id >= 0 {
+				if pa := vs.FindByID(id); pa != nil {
+					family.Add(pa)
+					continue
+				}
+				log.Printf("warning: cannot find var id '%v' parent of '%v'\n", j, v.Name())
+				continue
+			}
+			if _, err := strconv.ParseFloat(j, 64); err != nil {
+				log.Printf("warning: cannot parse '%v' parent of '%v'\n", j, v.Name())
+			}
 		}
 		nd := model.NewBNode(v)
 		nd.SetPotential(factor.NewZeroes(family...))
