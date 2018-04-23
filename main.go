@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/britojr/exp-run/cmd"
+	"github.com/britojr/exp-run/cmd/calcdist"
 	"github.com/britojr/exp-run/cmd/convert"
 	"github.com/britojr/exp-run/cmd/fstats"
 	"github.com/britojr/exp-run/cmd/inference"
@@ -18,6 +19,7 @@ var commands = []*cmd.Command{
 	qevgen.Cmd,
 	pmlearn.Cmd,
 	inference.Cmd,
+	calcdist.Cmd,
 }
 
 var commandMap map[string]*cmd.Command
