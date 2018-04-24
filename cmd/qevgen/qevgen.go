@@ -26,7 +26,7 @@ func init() {
 	Cmd.Short = "query and evidence generator"
 	Cmd.Flag = flag.NewFlagSet(Cmd.Name, flag.ExitOnError)
 	Cmd.Run = func(cm *cmd.Command, args []string) {
-		bifFile := cm.Flag.String("i", "", "input model in bif format")
+		bifFile := cm.Flag.String("m", "", "input model in bif format")
 		out := cm.Flag.String("o", "", "basename of file to write q/ev format")
 		sample := cm.Flag.String("s", "", "sample in csv format")
 		num := cm.Flag.Int("n", 1, "number of queries/evidences to generate")
@@ -50,16 +50,17 @@ func QevGenerate(inpFile, outFile, sampFile string, num, maxLfs int) {
 	log.Printf("create %v\n", fev.Name())
 	defer fq.Close()
 	defer fev.Close()
-	if len(sampFile) == 0 {
-		for i := 0; i < num; i++ {
-			sampleLine(b, fq, fev, nil, maxLfs)
-		}
-	} else {
+	tot := 0
+	if len(sampFile) != 0 {
 		scanner := bufio.NewScanner(ioutl.OpenFile(sampFile))
 		for scanner.Scan() {
 			read := strings.Split(scanner.Text(), ",")
 			sampleLine(b, fq, fev, read, maxLfs)
+			tot++
 		}
+	}
+	for i := 0; i < (num - tot); i++ {
+		sampleLine(b, fq, fev, nil, maxLfs)
 	}
 }
 
