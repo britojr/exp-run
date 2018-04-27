@@ -483,7 +483,8 @@ func writeCsvToArff(src, dst string, vs vars.VarList) {
 		for j := range states {
 			states[j] = strconv.Itoa(j)
 		}
-		hdr += fmt.Sprintf("@attribute %s {%s}\n", v.Name(), strings.Join(states, ","))
+		// needs to add a char because BI parser cannot receive a pure integer as a name
+		hdr += fmt.Sprintf("@attribute %s {%s}\n", "x"+v.Name(), strings.Join(states, ","))
 	}
 	hdr += "@data"
 
