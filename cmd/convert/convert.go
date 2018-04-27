@@ -31,10 +31,11 @@ const (
 
 	Ev2evid  = "ev2evid"
 	Csv2arff = "csv2arff"
+	Mo2mar   = "mo2mar"
 )
 
 func ConvTypes() []string {
-	return []string{Bi2bif, Bi2xml, Xml2bif, Bif2fg, Bif2uai, Ev2evid, Csv2arff}
+	return []string{Bi2bif, Bi2xml, Xml2bif, Bif2fg, Bif2uai, Ev2evid, Csv2arff, Mo2mar}
 }
 
 var Cmd = &cmd.Command{}
@@ -92,6 +93,8 @@ func Convert(src, dst, convType, dsname, bname string, smooth float64) {
 			return
 		}
 		writeCsvToArff(src, dst, bname)
+	case Mo2mar:
+		writeMoToMar(src, dst)
 	default:
 		log.Printf("error: invalid conversion option: (%v)\n\n", convType)
 		Cmd.Flag.PrintDefaults()
@@ -468,4 +471,27 @@ func writeCsvToArff(src, dst, bname string) {
 	fmt.Fprintln(w, hdr)
 	_, err = io.Copy(w, r)
 	errchk.Check(err, "")
+}
+
+func writeMoToMar(src, dst string) {
+	r := ioutl.OpenFile(src)
+	defer r.Close()
+	var parsed [][]float64
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		if len(scanner.Text()) == 0 {
+			continue
+		}
+		parsed = append(parsed, conv.Satof(strings.Fields(scanner.Text())))
+	}
+	w := ioutl.CreateFile(dst)
+	defer w.Close()
+	fmt.Fprintf(w, "MAR\n%v ", len(parsed))
+	for _, line := range parsed {
+		fmt.Fprintf(w, "%v ", len(line))
+		for _, v := range line {
+			fmt.Fprintf(w, "%.7f ", v)
+		}
+	}
+	fmt.Fprintln(w)
 }
