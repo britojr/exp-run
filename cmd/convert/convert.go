@@ -194,7 +194,7 @@ func parseLTMbif(fname string, vs vars.VarList) ([]*factor.Factor, vars.VarList)
 	for err != io.EOF {
 		if w == "variable" {
 			fmt.Fscanf(fi, "%s", &name)
-			name = strings.Trim(name, "\"")
+			name = strings.TrimPrefix(strings.Trim(name, "\""), "x")
 			v := vs.FindByName(name)
 			if v == nil {
 				latent = false
@@ -214,13 +214,13 @@ func parseLTMbif(fname string, vs vars.VarList) ([]*factor.Factor, vars.VarList)
 			clq := vars.VarList{}
 			fmt.Fscanf(fi, "%s", &w)
 			fmt.Fscanf(fi, "%s", &name)
-			name = strings.Trim(name, "\"")
+			name = strings.TrimPrefix(strings.Trim(name, "\""), "x")
 			varOrd = append(varOrd, vs.FindByName(name))
 			clq.Add(varOrd[0])
 			fmt.Fscanf(fi, "%s", &w)
 			if w == "|" {
 				fmt.Fscanf(fi, "%s", &name)
-				name = strings.Trim(name, "\"")
+				name = strings.TrimPrefix(strings.Trim(name, "\""), "x")
 				varOrd = append(varOrd, vs.FindByName(name))
 				clq.Add(varOrd[1])
 			}
