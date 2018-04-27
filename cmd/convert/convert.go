@@ -12,7 +12,6 @@ import (
 
 	"github.com/britojr/bnutils/bif"
 	"github.com/britojr/exp-run/cmd"
-	"github.com/britojr/lkbn/data"
 	"github.com/britojr/lkbn/factor"
 	"github.com/britojr/lkbn/model"
 	"github.com/britojr/lkbn/vars"
@@ -47,7 +46,7 @@ func init() {
 	Cmd.Run = func(cm *cmd.Command, args []string) {
 		src := cm.Flag.String("i", "", "input file")
 		dst := cm.Flag.String("o", "", "output file")
-		dsname := cm.Flag.String("d", "", "dataset file")
+		hdrname := cm.Flag.String("h", "", "header/schema file")
 		bname := cm.Flag.String("b", "", "bnet bif file")
 		smooth := cm.Flag.Float64("smooth", 0.0, "smooth deterministic probs")
 		convType := cm.Flag.String("t", "", "conversion type ("+strings.Join(ConvTypes(), "|")+")")
@@ -57,17 +56,15 @@ func init() {
 			cm.Flag.PrintDefaults()
 			return
 		}
-		Convert(*src, *dst, *convType, *dsname, *bname, *smooth)
+		Convert(*src, *dst, *convType, *hdrname, *bname, *smooth)
 	}
 }
 
-func Convert(src, dst, convType, dsname, bname string, smooth float64) {
+func Convert(src, dst, convType, hdrname, bname string, smooth float64) {
 	log.Printf("converts: (%v) %v -> %v\n", convType, src, dst)
-	var vs vars.VarList
-	if len(dsname) != 0 {
-		vs = data.NewDataset(dsname).Variables()
-	} else {
-		vs = []*vars.Var{}
+	vs := []*vars.Var{}
+	if len(hdrname) != 0 {
+		vs = parseHeader(hdrname)
 	}
 	switch convType {
 	case Bi2bif:
@@ -87,12 +84,12 @@ func Convert(src, dst, convType, dsname, bname string, smooth float64) {
 	case Ev2evid:
 		writeEvToEvid(src, dst)
 	case Csv2arff:
-		if len(bname) == 0 {
-			log.Printf("error: bnet file needed\n")
+		if len(vs) == 0 {
+			log.Printf("error: header/schema file needed\n")
 			Cmd.Flag.PrintDefaults()
 			return
 		}
-		writeCsvToArff(src, dst, bname)
+		writeCsvToArff(src, dst, vs)
 	case Mo2mar:
 		writeMoToMar(src, dst)
 	default:
@@ -100,6 +97,32 @@ func Convert(src, dst, convType, dsname, bname string, smooth float64) {
 		Cmd.Flag.PrintDefaults()
 		return
 	}
+}
+
+func parseHeader(hdrname string) (vs vars.VarList) {
+	r := ioutl.OpenFile(hdrname)
+	defer r.Close()
+	var lines [][]string
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		if len(scanner.Text()) == 0 {
+			continue
+		}
+		lines = append(lines, strings.Split(scanner.Text(), ","))
+	}
+	if len(lines) == 1 {
+		for i, c := range lines[0] {
+			vs.Add(vars.New(i, conv.Atoi(c), "", false))
+		}
+	} else {
+		if len(lines) > 1 {
+			for i, name := range lines[0] {
+				vs.Add(vars.New(i, conv.Atoi(lines[1][i]), name, false))
+			}
+		}
+	}
+	log.Printf("header: %v\n", vs)
+	return
 }
 
 func writeBif(ct *model.CTree, fname string) {
@@ -453,11 +476,9 @@ func writeEvToEvid(src, dst string) {
 	}
 }
 
-func writeCsvToArff(src, dst, bname string) {
-	b, err := bif.ParseStruct(bname)
-	errchk.Check(err, "")
+func writeCsvToArff(src, dst string, vs vars.VarList) {
 	hdr := "@relation data\n"
-	for _, v := range b.Variables() {
+	for _, v := range vs {
 		states := make([]string, v.NState())
 		for j := range states {
 			states[j] = strconv.Itoa(j)
@@ -469,7 +490,7 @@ func writeCsvToArff(src, dst, bname string) {
 	r := ioutl.OpenFile(src)
 	w := ioutl.CreateFile(dst)
 	fmt.Fprintln(w, hdr)
-	_, err = io.Copy(w, r)
+	_, err := io.Copy(w, r)
 	errchk.Check(err, "")
 }
 
