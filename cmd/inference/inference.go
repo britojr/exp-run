@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/britojr/exp-run/cmd/convert"
 	"github.com/britojr/utl/cmdsh"
 	"github.com/britojr/utl/conv"
+	"github.com/britojr/utl/errchk"
 	"github.com/britojr/utl/ioutl"
 	"github.com/gonum/floats"
 )
@@ -54,6 +56,7 @@ func Infer(mFile, qFile, evFile, logFile string) {
 		probQev = computeProb(dainame, daiQu)
 		probEv := computeProb(dainame, daiEv)
 		floats.Sub(probQev, probEv)
+		removePositive(probQev)
 	} else {
 		daiQu := dainame + ".quer"
 		convert.Convert(qFile, daiQu, convert.Ev2evid, "", "", 0.0)
@@ -128,4 +131,14 @@ func parsePR(fname string) (fs []float64) {
 		}
 	}
 	return
+}
+
+func removePositive(fs []float64) {
+	mInf, err := strconv.ParseFloat("-inf", 64)
+	errchk.Check(err, "")
+	for i, v := range fs {
+		if v > 0 {
+			fs[i] = mInf
+		}
+	}
 }
