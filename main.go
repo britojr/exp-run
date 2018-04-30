@@ -8,6 +8,7 @@ import (
 	"github.com/britojr/exp-run/cmd/calcdist"
 	"github.com/britojr/exp-run/cmd/convert"
 	"github.com/britojr/exp-run/cmd/fstats"
+	"github.com/britojr/exp-run/cmd/hidgen"
 	"github.com/britojr/exp-run/cmd/inference"
 	"github.com/britojr/exp-run/cmd/pmlearn"
 	"github.com/britojr/exp-run/cmd/qevgen"
@@ -22,6 +23,7 @@ var commands = []*cmd.Command{
 	inference.Cmd,
 	calcdist.Cmd,
 	sample.Cmd,
+	hidgen.Cmd,
 }
 
 var commandMap map[string]*cmd.Command
