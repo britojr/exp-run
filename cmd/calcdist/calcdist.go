@@ -59,27 +59,69 @@ func init() {
 
 // CalcDist calculates distance between values of two files
 func CalcDist(inFile1, inFile2, outFile, distOpt string) {
-	if dist, ok := distances[distOpt]; ok {
-		f1Vals := readInfFile(inFile1)
-		log.Printf("%v: %v values read\n", inFile1, len(f1Vals))
-		f2Vals := readInfFile(inFile2)
-		log.Printf("%v: %v values read\n", inFile2, len(f2Vals))
-		if len(f1Vals) != len(f2Vals) {
-			log.Printf("error: different size\n")
-			return
-		}
-		dVal := dist(f1Vals, f2Vals)
-		if len(outFile) != 0 {
-			f := ioutl.CreateFile(outFile)
-			fmt.Fprintf(f, "%v\n", dVal)
-			f.Close()
-		} else {
-			fmt.Printf("%v\n", dVal)
-		}
+	var result float64
+	dist, ok := distances[distOpt]
+	if !ok {
+		log.Printf("error: invalid option: (%v)\n\n", distOpt)
+		Cmd.Flag.PrintDefaults()
 		return
 	}
-	log.Printf("error: invalid option: (%v)\n\n", distOpt)
-	Cmd.Flag.PrintDefaults()
+	f1 := parseValues(inFile1)
+	f2 := parseValues(inFile2)
+	if len(f2) < len(f1) || len(f1) < 1 {
+		log.Printf("error: size not enough to compare i1=%v i2=%v\n", len(f1), len(f2))
+		return
+	}
+	if len(f1) == 1 {
+		result = dist(f1[0], f2[0])
+	} else {
+		rs := make([]float64, len(f1))
+		for i := range rs {
+			rs[i] = dist(f1[i], f2[i])
+		}
+		result = stat.Mean(rs, nil)
+	}
+	if len(outFile) != 0 {
+		f := ioutl.CreateFile(outFile)
+		fmt.Fprintf(f, "%v\n", result)
+		f.Close()
+	} else {
+		fmt.Printf("%v\n", result)
+	}
+}
+
+func parseValues(fname string) (fs [][]float64) {
+	f := ioutl.OpenFile(fname)
+	scanner := bufio.NewScanner(f)
+	scanner.Scan()
+	line := scanner.Text()
+	f.Close()
+	if line == "MAR" {
+		fs = readMarFile(fname)
+		log.Printf("%v: read %v variables\n", fname, len(fs))
+	} else {
+		fvals := readInfFile(fname)
+		log.Printf("%v: read %v values\n", fname, len(fvals))
+		fs = append(fs, fvals)
+	}
+	return
+}
+
+func readMarFile(fname string) (ma [][]float64) {
+	r := ioutl.OpenFile(fname)
+	defer r.Close()
+	mar := ""
+	fmt.Fscanln(r, &mar)
+	var n int
+	fmt.Fscanf(r, "%d", &n)
+	ma = make([][]float64, n)
+	for i := range ma {
+		fmt.Fscanf(r, "%d", &n)
+		ma[i] = make([]float64, n)
+		for j := range ma[i] {
+			fmt.Fscanf(r, "%f", &ma[i][j])
+		}
+	}
 	return
 }
 
