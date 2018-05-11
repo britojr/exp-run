@@ -25,6 +25,7 @@ const (
 	Bi2bif  = "bi2bif"
 	Bi2xml  = "bi2xml"
 	Xml2bif = "xml2bif"
+	Bif2xml = "bif2xml"
 	Bif2fg  = "bif2fg"
 	Bif2uai = "bif2uai"
 
@@ -34,7 +35,7 @@ const (
 )
 
 func ConvTypes() []string {
-	return []string{Bi2bif, Bi2xml, Xml2bif, Bif2fg, Bif2uai, Ev2evid, Csv2arff, Mo2mar}
+	return []string{Bi2bif, Bi2xml, Xml2bif, Bif2xml, Bif2fg, Bif2uai, Ev2evid, Csv2arff, Mo2mar}
 }
 
 var Cmd = &cmd.Command{}
@@ -75,6 +76,8 @@ func Convert(src, dst, convType, hdrname, bname string, smooth float64) {
 		potentials, _ := parseLTMbif(src, vs)
 		ct := buildCTree(potentials)
 		writeXML(ct, dst)
+	case Bif2xml:
+		writeBifToXml(src, dst)
 	case Xml2bif:
 		writeXMLToBif(src, dst)
 	case Bif2fg:
@@ -397,6 +400,29 @@ func writeBifToFG(src, dst string) {
 		}
 		fmt.Fprintln(w)
 	}
+}
+
+func buildBNet(b *bif.Struct) *model.BNet {
+	bn := model.NewBNet()
+	for _, v := range b.Variables() {
+		nd := model.NewBNode(v)
+		nd.SetPotential(b.Factor(v.Name()))
+		bn.AddNode(nd)
+	}
+	return bn
+}
+
+func writeBifToXml(src, dst string) {
+	b, err := bif.ParseStruct(src)
+	errchk.Check(err, "")
+	bn := buildBNet(b)
+	w := ioutl.CreateFile(dst)
+	defer w.Close()
+
+	xmlbn := model.XMLBIF{BNetXML: bn.XMLStruct()}
+	data, err := xml.MarshalIndent(xmlbn, "", "\t")
+	errchk.Check(err, "")
+	w.Write(data)
 }
 
 func writeBifToUAI(src, dst string, smooth float64) {
