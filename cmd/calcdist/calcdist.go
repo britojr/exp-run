@@ -26,6 +26,7 @@ func distFuncs() (dfs []string) {
 // distance functions
 var distances = map[string]func(a, b []float64) float64{
 	"mse":           stats.MSE,
+	"abs":           stats.MAE,
 	"max-abs":       stats.MaxAbsErr,
 	"hellinger":     stats.HellDist,
 	"cross-entropy": stat.CrossEntropy,
