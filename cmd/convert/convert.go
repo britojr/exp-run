@@ -25,6 +25,7 @@ const (
 	Bi2bif  = "bi2bif"
 	Bi2xml  = "bi2xml"
 	Xml2bif = "xml2bif"
+	Xml2uai = "xml2uai"
 	Bif2xml = "bif2xml"
 	Bif2fg  = "bif2fg"
 	Bif2uai = "bif2uai"
@@ -35,7 +36,7 @@ const (
 )
 
 func ConvTypes() []string {
-	return []string{Bi2bif, Bi2xml, Xml2bif, Bif2xml, Bif2fg, Bif2uai, Ev2evid, Csv2arff, Mo2mar}
+	return []string{Bi2bif, Bi2xml, Xml2bif, Xml2uai, Bif2xml, Bif2fg, Bif2uai, Ev2evid, Csv2arff, Mo2mar}
 }
 
 var Cmd = &cmd.Command{}
@@ -80,6 +81,8 @@ func Convert(src, dst, convType, hdrname, bname string, smooth float64) {
 		writeBifToXml(src, dst)
 	case Xml2bif:
 		writeXMLToBif(src, dst)
+	case Xml2uai:
+		writeXMLToUai(src, dst)
 	case Bif2fg:
 		writeBifToFG(src, dst)
 	case Bif2uai:
@@ -362,6 +365,38 @@ func writeXMLToBif(inFile, outFile string) {
 			fmt.Fprintf(f, "  table %v;\n", tableVal)
 		}
 		fmt.Fprintf(f, "}\n")
+	}
+}
+
+func writeXMLToUai(inFile, outFile string) {
+	ct := model.ReadCTreeXML(inFile)
+	w := ioutl.CreateFile(outFile)
+	defer w.Close()
+
+	fmt.Fprintln(w, "MARKOV")
+	fmt.Fprintf(w, "%v\n", len(ct.Variables()))
+	for _, v := range ct.Variables() {
+		fmt.Fprintf(w, "%v ", v.NState())
+	}
+	fmt.Fprintln(w)
+	fmt.Fprintf(w, "%v\n", len(ct.Nodes())) // num factors
+	for _, nd := range ct.Nodes() {
+		fmt.Fprintf(w, "%v\t", len(nd.Variables()))
+		for _, u := range nd.Variables() {
+			fmt.Fprintf(w, "%v ", u.ID())
+		}
+		fmt.Fprintln(w)
+	}
+	fmt.Fprintln(w)
+	for _, nd := range ct.Nodes() {
+		fmt.Fprintf(w, "%v\n", len(nd.Potential().Values()))
+		ixf := vars.NewOrderedIndex(nd.Variables(), nd.Variables())
+		for !ixf.Ended() {
+			fmt.Fprintf(w, "%v ", nd.Potential().Values()[ixf.I()])
+			ixf.NextRight()
+		}
+		fmt.Fprintln(w)
+		fmt.Fprintln(w)
 	}
 }
 
