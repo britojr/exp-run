@@ -44,7 +44,13 @@ func init() {
 func Infer(mFile, qFile, evFile, logFile string) {
 	basename := strings.TrimSuffix(mFile, filepath.Ext(mFile))
 	dainame := basename + ".uai"
-	convert.Convert(mFile, dainame, convert.Bif2uai, "", "", 0.0)
+	switch filepath.Ext(mFile) {
+	case ".uai":
+	case ".xml":
+		convert.Convert(mFile, dainame, convert.Xml2uai, "", "", 0.0)
+	default:
+		convert.Convert(mFile, dainame, convert.Bif2uai, "", "", 0.0)
+	}
 	var probQev []float64
 	if len(evFile) != 0 {
 		daiEv, daiQu := dainame+".evid", dainame+".quer"
