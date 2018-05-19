@@ -38,7 +38,7 @@ func init() {
 
 func ParmLearn(inFile, outFile, dsname string, alpha float64) {
 	paMap, vNames := parseParentMat(inFile)
-	ds := data.NewDataset(dsname, false)
+	ds := data.NewDataset(dsname, "", false)
 	vs := ds.Variables()
 	for i, name := range vNames {
 		vs.FindByID(i).SetName(name)
