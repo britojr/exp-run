@@ -3,11 +3,13 @@ package pmlearn
 import (
 	"bufio"
 	"flag"
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
 
 	"github.com/britojr/exp-run/cmd"
+	"github.com/britojr/exp-run/cmd/convert"
 	"github.com/britojr/lkbn/data"
 	"github.com/britojr/lkbn/factor"
 	"github.com/britojr/lkbn/model"
@@ -25,6 +27,7 @@ func init() {
 		src := cm.Flag.String("i", "", "input file (in list of parents format)")
 		dst := cm.Flag.String("o", "", "output file (xml format)")
 		dsname := cm.Flag.String("d", "", "dataset file")
+		hdrname := cm.Flag.String("h", "", "header/schema file")
 		alpha := cm.Flag.Float64("alpha", 0, "smoothing constant to avoid zero probabilities")
 		cm.Flag.Parse(args)
 		if len(*src) == 0 || len(*dst) == 0 || len(*dsname) == 0 {
@@ -32,14 +35,20 @@ func init() {
 			cm.Flag.PrintDefaults()
 			return
 		}
-		ParmLearn(*src, *dst, *dsname, *alpha)
+		ParmLearn(*src, *dst, *dsname, *hdrname, *alpha)
 	}
 }
 
-func ParmLearn(inFile, outFile, dsname string, alpha float64) {
+func ParmLearn(inFile, outFile, dsname, hdrname string, alpha float64) {
 	paMap, vNames := parseParentMat(inFile)
 	ds := data.NewDataset(dsname, "", false)
-	vs := ds.Variables()
+	var vs vars.VarList
+	if len(hdrname) != 0 {
+		vs = convert.ParseHeader(hdrname)
+	} else {
+		vs = ds.Variables()
+	}
+	fmt.Println(vs)
 	for i, name := range vNames {
 		vs.FindByID(i).SetName(name)
 	}

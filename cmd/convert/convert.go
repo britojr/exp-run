@@ -66,7 +66,7 @@ func Convert(src, dst, convType, hdrname, bname string, smooth float64) {
 	log.Printf("converts: (%v) %v -> %v\n", convType, src, dst)
 	vs := []*vars.Var{}
 	if len(hdrname) != 0 {
-		vs = parseHeader(hdrname)
+		vs = ParseHeader(hdrname)
 	}
 	switch convType {
 	case Bi2bif:
@@ -105,7 +105,7 @@ func Convert(src, dst, convType, hdrname, bname string, smooth float64) {
 	}
 }
 
-func parseHeader(hdrname string) (vs vars.VarList) {
+func ParseHeader(hdrname string) (vs vars.VarList) {
 	r := ioutl.OpenFile(hdrname)
 	defer r.Close()
 	var lines [][]string
